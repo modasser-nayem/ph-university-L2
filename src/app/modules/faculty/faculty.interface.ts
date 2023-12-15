@@ -6,25 +6,11 @@ type TUsername = {
   lastName: string;
 };
 
-type TGuardian = {
-  fatherName: string;
-  fatherOccupation: string;
-  fatherContactNo: string;
-  motherName: string;
-  motherOccupation: string;
-  motherContactNo: string;
-};
-type TLocalGuardian = {
-  name: string;
-  occupation: string;
-  contactNo: string;
-  address: string;
-};
-
-export interface IStudent {
+export interface IFaculty {
   id: string;
   user: Types.ObjectId;
   name: TUsername;
+  designation: string;
   gender: 'male' | 'female' | 'other';
   age: number;
   dateOfBirth: string;
@@ -34,10 +20,7 @@ export interface IStudent {
   bloodGroup?: 'A+' | 'A-' | 'B+' | 'B-' | 'AB+' | 'AB-' | 'O+' | 'O-';
   presentAddress: string;
   permanentAddress: string;
-  guardian: TGuardian;
-  localGuardian: TLocalGuardian;
   profileImg?: string;
-  isDeleted?: boolean;
-  admissionSemester: Types.ObjectId;
   academicDepartment: Types.ObjectId;
+  isDeleted?: boolean;
 }

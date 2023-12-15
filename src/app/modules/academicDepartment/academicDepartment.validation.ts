@@ -9,10 +9,12 @@ const createAcademicDepartmentValidationSchema = z.object({
       })
       .min(4, { message: 'Name must be greater then 3' })
       .trim(),
-    academicFaculty: z.string({
-      invalid_type_error: 'Academic faculty must be string',
-      required_error: 'Faculty is required',
-    }),
+    academicFaculty: z
+      .string({
+        invalid_type_error: 'Academic faculty must be string',
+        required_error: 'Faculty is required',
+      })
+      .trim(),
   }),
 });
 

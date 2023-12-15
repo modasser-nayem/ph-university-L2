@@ -3,6 +3,8 @@ import { IStudent } from './student.interface';
 import { Student } from './student.model';
 import AppError from '../../errors/AppError';
 import mongoose from 'mongoose';
+import { studentSearchableFields } from './student.constant';
+import QueryBuilder from '../../builder/QueryBuilder';
 
 const getSingleStudentFromDB = async (id: string) => {
   const result = await Student.findOne({ id }).populate({
@@ -11,18 +13,16 @@ const getSingleStudentFromDB = async (id: string) => {
   });
   return result;
 };
-const getAllStudentsFromDB = async () => {
-  const result = await Student.find(
-    {},
-    {
-      _id: 0,
-      guardian: 0,
-      localGuardian: 0,
-      emergencyContactNo: 0,
-      permanentAddress: 0,
-      isDeleted: 0,
-    },
-  );
+const getAllStudentsFromDB = async (query: Record<string, unknown>) => {
+  const studentQuery = new QueryBuilder(Student.find(), query)
+    .search(studentSearchableFields)
+    .filter()
+    .sort()
+    .paginate()
+    .fields();
+
+  const result = await studentQuery.modelQuery;
+
   return result;
 };
 const updateStudentIntoDB = async (id: string, payload: Partial<IStudent>) => {

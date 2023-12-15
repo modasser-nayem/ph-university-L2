@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+// Custom validation function
+
 const userNameValidationSchema = z.object(
   {
     firstName: z
@@ -69,7 +71,12 @@ const createStudentValidationSchema = z.object({
       localGuardian: localGuardianValidationSchema,
       profileImg: z.string().trim().optional(),
       admissionSemester: z.string().trim(),
-      academicDepartment: z.string().trim(),
+      academicDepartment: z.string().refine((data) => {
+        if (typeof data !== 'string' || data.trim() === '') {
+          throw new Error('Value must be a non-empty string.');
+        }
+        return data;
+      }),
     }),
   }),
 });

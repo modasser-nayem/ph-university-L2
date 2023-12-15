@@ -1,36 +1,76 @@
-import { NextFunction, Request, Response } from 'express';
+import { ErrorRequestHandler, NextFunction } from 'express';
 import AppError from '../errors/AppError';
+import { ZodError } from 'zod';
+import { TErrorSources } from '../interface/error';
+import handleValidationError from '../errors/handleValidationError';
+import handleCastError from '../errors/handleCastError';
+import handleDuplicateError from '../errors/handleDuplicateError';
+import handleZodError from '../errors/handleZodError';
+import config from '../config';
 
-const globalErrorHandler = (
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  err: any,
-  req: Request,
-  res: Response,
+const globalErrorHandler: ErrorRequestHandler = (
+  err,
+  req,
+  res,
   // eslint-disable-next-line @typescript-eslint/no-unused-vars, no-unused-vars
   next: NextFunction,
 ) => {
-  err.statusCode = err.statusCode || 500;
-  // if (Object.keys(err.message).length) {
-  //   err.message = 'Something went wrong';
-  // }
-  err.message = err.message || 'Something went wrong!';
+  let statusCode = 500;
+  let message = err.message || 'Something went wrong!';
+  let errorSources: TErrorSources = [
+    {
+      path: '',
+      message: 'Something went wrong!',
+    },
+  ];
 
-  // CastError
-  if (err.name === 'CastError') {
-    const message = `Resource not found. Invalid: ${err.path}`;
-    err = new AppError(400, message);
+  if (err instanceof ZodError) {
+    const simplifiedError = handleZodError(err);
+    statusCode = simplifiedError?.statusCode;
+    message = simplifiedError?.message;
+    errorSources = simplifiedError?.errorSources;
+  } else if (err?.name === 'ValidationError') {
+    const simplifiedError = handleValidationError(err);
+    statusCode = simplifiedError?.statusCode;
+    message = simplifiedError?.message;
+    errorSources = simplifiedError?.errorSources;
+  } else if (err?.name === 'CastError') {
+    const simplifiedError = handleCastError(err);
+    statusCode = simplifiedError?.statusCode;
+    message = simplifiedError?.message;
+    errorSources = simplifiedError?.errorSources;
+  } else if (err?.code === 11000) {
+    const simplifiedError = handleDuplicateError(err);
+    statusCode = simplifiedError?.statusCode;
+    message = simplifiedError?.message;
+    errorSources = simplifiedError?.errorSources;
+  } else if (err instanceof AppError) {
+    statusCode = err?.statusCode;
+    message =
+      statusCode === 400
+        ? 'Bad Request'
+        : statusCode === 404
+          ? 'Not Found'
+          : statusCode === 500
+            ? 'Server Error'
+            : 'Something went wrong';
+    errorSources = [
+      {
+        path: '',
+        message: err?.message,
+      },
+    ];
+  } else if (err instanceof Error) {
+    message = 'Internal Server Error!';
+    errorSources = [{ path: '', message: err?.message }];
   }
 
-  // Mongoose duplicate key error
-  if (err.code === 11000) {
-    const message = `Duplicate ${Object.keys(err.keyValue)} Entered`;
-    err = new AppError(400, message);
-  }
-
-  return res.status(err.statusCode).json({
+  return res.status(statusCode).json({
     success: false,
-    message: err.message,
-    error: err,
+    message,
+    errorSources: errorSources,
+    err,
+    stack: config.NODE_ENV === 'development' ? err?.stack : null,
   });
 };
 
