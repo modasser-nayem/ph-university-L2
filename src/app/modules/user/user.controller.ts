@@ -9,6 +9,7 @@ const createStudent: RequestHandler = catchAsync(async (req, res, next) => {
 
   // parameter next pass because use transaction rollback
   const result = await userServices.createStudentIntoDB(
+    req.file,
     password,
     studentData,
     next,
@@ -27,6 +28,7 @@ const createFaculty: RequestHandler = catchAsync(async (req, res, next) => {
 
   // parameter next pass because use transaction rollback
   const result = await userServices.createFacultyIntoDB(
+    req.file,
     password,
     facultyData,
     next,
@@ -45,6 +47,7 @@ const createAdmin: RequestHandler = catchAsync(async (req, res, next) => {
 
   // parameter next pass because use transaction rollback
   const result = await userServices.createAdminIntoDB(
+    req.file,
     password,
     adminData,
     next,
@@ -59,4 +62,44 @@ const createAdmin: RequestHandler = catchAsync(async (req, res, next) => {
   });
 });
 
-export const userControllers = { createStudent, createFaculty, createAdmin };
+const changeUserStatus: RequestHandler = catchAsync(async (req, res) => {
+  const id = req.params.id;
+  const { status } = req.body;
+  const result = await userServices.changeUserStatus(id, status);
+
+  sendResponse(res, {
+    statusCode: 200,
+    message: 'Status is updated successfully',
+    data: result,
+  });
+});
+
+const getMe: RequestHandler = catchAsync(async (req, res) => {
+  const { id, role } = req.user;
+  const result = await userServices.getMeFromDB({ id, role });
+
+  sendResponse(res, {
+    statusCode: 200,
+    message: 'User is retrieved successfully',
+    data: result,
+  });
+});
+
+const imageUpload: RequestHandler = catchAsync(async (req, res) => {
+  const result = await userServices.imageUpload(req.file);
+
+  sendResponse(res, {
+    statusCode: 200,
+    message: 'Image upload successfully',
+    data: result,
+  });
+});
+
+export const userControllers = {
+  createStudent,
+  createFaculty,
+  createAdmin,
+  changeUserStatus,
+  getMe,
+  imageUpload,
+};

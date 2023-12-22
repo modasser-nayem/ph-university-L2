@@ -42,7 +42,6 @@ const createFacultyValidationSchema = z.object({
       permanentAddress: z
         .string({ required_error: 'Permanent address is required' })
         .trim(),
-      profileImg: z.string().trim().optional(),
     }),
   }),
 });
@@ -77,7 +76,7 @@ const updateFacultyValidationSchema = z.object({
       .string({ required_error: 'Permanent address is required' })
       .trim()
       .optional(),
-    profileImg: z.string().trim().optional(),
+    // profileImg: z.string().trim().optional(),
     academicDepartment: z.string(),
   }),
 });

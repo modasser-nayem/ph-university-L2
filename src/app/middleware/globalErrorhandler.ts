@@ -51,9 +51,13 @@ const globalErrorHandler: ErrorRequestHandler = (
         ? 'Bad Request'
         : statusCode === 404
           ? 'Not Found'
-          : statusCode === 500
-            ? 'Server Error'
-            : 'Something went wrong';
+          : statusCode === 401
+            ? 'Unauthorized Access'
+            : statusCode === 403
+              ? 'Forbidden Access'
+              : statusCode === 500
+                ? 'Server Error'
+                : 'Something went wrong';
     errorSources = [
       {
         path: '',

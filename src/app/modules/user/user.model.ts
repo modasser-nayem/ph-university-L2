@@ -1,23 +1,33 @@
 import { Schema, model } from 'mongoose';
-import { IUser } from './user.interface';
+import { IUser, UserModel } from './user.interface';
 import bcrypt from 'bcrypt';
-import config from '../../config';
+import passwordHashed from '../../utils/passwordHashed';
+import { UserStatus } from './user.constant';
 
-const userSchema = new Schema<IUser>(
+const userSchema = new Schema<IUser, UserModel>(
   {
     id: {
       type: String,
       required: [true, 'Please provide a user id'],
       unique: true,
     },
+    email: {
+      type: String,
+      required: [true, 'Please provide an email'],
+      unique: true,
+    },
     password: {
       type: String,
       required: [true, 'Please provide a password'],
       minlength: [6, 'Password must be greater than 5 character'],
+      select: 0,
     },
     needsPasswordChange: {
       type: Boolean,
       default: true,
+    },
+    passwordChangeAt: {
+      type: Date,
     },
     role: {
       type: String,
@@ -29,7 +39,7 @@ const userSchema = new Schema<IUser>(
     },
     status: {
       type: String,
-      enum: ['in-progress', 'blocked'],
+      enum: UserStatus,
       default: 'in-progress',
     },
     isDeleted: {
@@ -43,10 +53,7 @@ const userSchema = new Schema<IUser>(
 userSchema.pre('save', async function (next) {
   // eslint-disable-next-line @typescript-eslint/no-this-alias
   const user = this;
-  user.password = await bcrypt.hash(
-    user.password,
-    Number(config.BCRYPT_SALT_ROUND),
-  );
+  user.password = await passwordHashed(user.password);
   next();
 });
 
@@ -55,4 +62,24 @@ userSchema.post('save', function (doc, next) {
   next();
 });
 
-export const User = model<IUser>('User', userSchema);
+userSchema.statics.isUserExistsByCustomId = async function (id: string) {
+  return await User.findOne({ id }).select('+password');
+};
+
+userSchema.statics.isPasswordMatched = async function (
+  plainTextPassword: string,
+  hashedPassword: string,
+) {
+  return await bcrypt.compare(plainTextPassword, hashedPassword);
+};
+
+userSchema.statics.isJWTIssuedBeforePasswordChanged = function (
+  passwordChangedTimestamp: Date,
+  jwtIssuedTimestamp: number,
+) {
+  const passwordChangeTime =
+    new Date(passwordChangedTimestamp).getTime() / 1000;
+  return passwordChangeTime > jwtIssuedTimestamp;
+};
+
+export const User = model<IUser, UserModel>('User', userSchema);
